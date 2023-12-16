@@ -146,10 +146,19 @@ public:
             while (!stack_empty()) {
                 auto const fibnum = pop();
                 if (1 < fibnum) {
-                    push(fibnum - 2);
-                    push(fibnum - 1);
-                } else {
-                    add_to_result(fibnum);
+                    auto const fibnum_minus_two = fibnum - 2;
+                    if (1 < fibnum_minus_two) {
+                        push(fibnum_minus_two);
+                    } else if (0 < fibnum_minus_two) {
+                        add_to_result(fibnum_minus_two);
+                    }
+                    
+                    auto const fibnum_minus_one = fibnum - 1;
+                    if (1 < fibnum_minus_one) {
+                        push(fibnum_minus_one);
+                    } else if (0 < fibnum_minus_one) {
+                        add_to_result(fibnum_minus_one);
+                    }
                 }
             }
         } else {
