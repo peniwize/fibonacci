@@ -22,118 +22,131 @@ using namespace std;
 
 // [----------------(120 columns)---------------> Module Code Delimiter <---------------(120 columns)----------------]
 
-/*
-    Iterative solution:
-        
-        Time = O(2^n), because each fibonacci number is calculated
-                       from TWO previous fibonacci numbers, e.g.
-                       fib(5) =
-                                                   5-00
-                                                  /    \
-                                           +-----+      +----+
-                                          /                   \
-                                         4-01                  3-02
-                                     /         \              /    \
-                                    3-03        2-04         2-05   1-06
-                                   /    \      /    \       /    \
-                                  2-07   1-08 1-09   0-10  1-11   0-12
-                                 /    \
-                                1-13   0-14
-
-                       Therefore the maximum possible number of 
-                       nodes in the tree is 2^n-1 (2^5-1 == 31, in this case.)
-                       The label format of nodes above is: fibonacci_number-n,
-                       where 'n' is a unique node ID used to identify each 
-                       individual node.
-        
-        Space = O(1), because the maximum depth of the tree is Log2(31)
-                      and 31 is constant.
-*/
 class Solution {
 public:
+    /*!
+        \brief A simple stack wrapper around a native array.
+        This is a utility class for the Fibonacci algorithm.
+    */
+    template <typename T>
+    class static_stack_t {
+    public:
+        template <size_t C> static_stack_t(T (&array)[C]) : static_stack_t{array, C} {}
+        static_stack_t(T array[], size_t capacity) : ary_{array}, capacity_{capacity} {}
+
+        static_stack_t& push(T const value) { assert(capacity() > size()); ary_[tos_++] = std::move(value); return *this; }
+        template <typename... A> static_stack_t& push(A... args) { return push(T{args...}); }
+        T pop() { assert(!empty()); return ary_[--tos_]; }
+        size_t capacity() const { return capacity_; }
+        size_t size() const { return tos_; }
+        bool empty() const { return 0 == size(); }
+        bool full() const { return capacity() == size(); }
+
+    private:
+        T* ary_; //!< Array that contains the stack.
+        size_t tos_{}; //!< Top of stack index.
+        size_t capacity_{}; //!< Capacity of 'ary_'.
+    };
+
     /*
-        Stack based algorithm:
+        Fibonacci iterative solution:
+        
+                 fib(5) = *5-00
+                          /    \
+                   +-----+      +----+
+                  /                   \
+                *4-01                  3-02
+             /         \              /    \
+           *3-03       *2-04         2-05   1-06
+           /    \      /    \       /    \
+         *2-07  *1-08 1-09   0-10  1-11   0-12
+         /    \
+       *1-13  *0-14
+
+        The label format of nodes above is: fibonacci_number-I,
+        where 'I' is a unique node ID used to identify each 
+        individual node.
+
+        WITH memoization (a cache of previously calculated values):
+
+            'n' = The requested Fibonacci number, e.g. 10 in fib(10) == 55.
+        
+            Time = O(2n) => O(n)
+            
+            Because only the leftmost branch of branch of the tree is fully
+            explored (iterated).  All other branch values are calculated and
+            stored in the memoized values by the time they're needed - after
+            the leftmost branch has been explored.  Explored (visited) nodes
+            in the tree above are denoted with a '*'.  All other nodes are 
+            skipped by this algorithm.
+
+            The '2' in 'O(2n)' is because the algorithm loops once for each 
+            child of each visited node (and only the leftmost nodes are visited.)
+            
+            This approach works because the right child of any node in the 
+            Fibonacci binary tree has a tree whose size is less than or equal 
+            to the size of the left child tree AND the nodes in the right child 
+            tree will only contain values that have already been calculated by
+            the left child tree, since the left child tree is evaluated first.
+        
+            Space = O(n + max(2, n + 1)) => O(2n + 1) => O(n)
+
+            The first term [n] is for the tree node [visitation] stack.
+            The second term [max(2, n + 1)] is for the memoized values.
+
+        Unrolling the algorithm for fib(5), as shown in the tree above:
             
         result = 0
+        memoized values = [0 1 0 0 0 0]
         
-        push 5-00            [stack=5-00]
+        push 5-00            [stack=5-00]                      [memo=0 1 0 0 0 0]
 
-        pop 5-00             [stack=empty]
-        push 3-02 (right)    [stack=3-02]
-        push 4-01 (left)     [stack=4-01]
+        pop 5-00             [stack=empty]                     [memo=0 1 0 0 0 0]
+        push 3-02 (right)    [stack=3-02]                      [memo=0 1 0 0 0 0]
+        push 4-01 (left)     [stack=4-01]                      [memo=0 1 0 0 0 0]
         
-        // Begin traverstal of the left side of the binary tree.
+        Begin traverstal of the left side of the binary tree:
         
-        pop 4-01             [stack=3-02]
-        push 2-04 (right)    [stack=3-02 2-04]
-        push 3-03 (left)     [stack=3-02 2-04 3-03]
+        pop 4-01             [stack=3-02]                      [memo=0 1 0 0 0 0]
+        push 2-04 (right)    [stack=3-02 2-04]                 [memo=0 1 0 0 0 0]
+        push 3-03 (left)     [stack=3-02 2-04 3-03]            [memo=0 1 0 0 0 0]
         
-        pop 3-03             [stack=3-02 2-04]
-        push 1-08 (right)    [stack=3-02 2-04 1-08]
-        push 2-07 (left)     [stack=3-02 2-04 1-08 2-07]
+        pop 3-03             [stack=3-02 2-04]                 [memo=0 1 0 0 0 0]
+        push 1-08 (right)    [stack=3-02 2-04 1-08]            [memo=0 1 0 0 0 0]
+        push 2-07 (left)     [stack=3-02 2-04 1-08 2-07]       [memo=0 1 0 0 0 0]
         
-        pop 2-07             [stack=3-02 2-04 1-08]
-        push 0-14 (right)    [stack=3-02 2-04 1-08 0-14]
-        push 1-13 (left)     [stack=3-02 2-04 1-08 0-14 1-13]
+        pop 2-07             [stack=3-02 2-04 1-08]            [memo=0 1 0 0 0 0]
+        push 0-14 (right)    [stack=3-02 2-04 1-08 0-14]       [memo=0 1 0 0 0 0]
+        push 1-13 (left)     [stack=3-02 2-04 1-08 0-14 1-13]  [memo=0 1 0 0 0 0]
         
-        pop 1-13             [stack=3-02 2-04 1-08 0-14]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 1 = 1
+        pop 1-13             [stack=3-02 2-04 1-08 0-14]       [memo=0 1 0 0 0 0]
+        No new value to push because last popped value < 2.
+        result += 1 = 1                                        [memo=0 1 1 0 0 0]
 
-        pop 0-14             [stack=3-02 2-04 1-08]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 0 = 1
+        pop 0-14             [stack=3-02 2-04 1-08]            [memo=0 1 1 0 0 0]
+        No new value to push because last popped value < 2.
+        result += 0 = 1                                        [memo=0 1 1 0 0 0]
 
-        pop 1-08             [stack=3-02 2-04]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 1 = 2
+        pop 1-08             [stack=3-02 2-04]                 [memo=0 1 1 0 0 0]
+        No new value to push because last popped value < 2.
+        result += 1 = 2                                        [memo=0 1 1 2 0 0]
 
-        pop 2-04             [stack=3-02]
-        push 1-00 (right)    [stack=3-02 1-09]
-        push 0-10 (left)     [stack=3-02 1-09 0-10]
-        
-        pop 0-10             [stack=3-02 1-09]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 0 = 2
+        pop 2-04             [stack=3-02]                      [memo=0 1 1 2 0 0]
+        Using preexisting memoized value for 2.
+        result += 1 = 3                                        [memo=0 1 1 2 3 0]
 
-        pop 1-09             [stack=3-02]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 1 = 3
+        This completes the traversal of the left side of the binary tree.
+        Begin traversal of the right side of the binary tree:
 
-        // This completes the traversal of the left side of the binary tree.
-        // Now begin traversal of the right side of the binary tree.
+        pop 3-02             [stack=empty]                     [memo=0 1 1 2 3 0]
+        Using preexisting memoized value for 3.
+        result += 2 = 5                                        [memo=0 1 1 2 3 5]
 
-        pop 3-02             [stack=empty]
-        push 1-06 (right)    [stack=1-06]
-        push 2-05 (left)     [stack=1-06 2-05]
+        result == 5
 
-        pop 2-05             [stack=1-06]
-        push 0-12            [stack=1-06 0-12]
-        push 1-11            [stack=1-06 0-12 1-11]
-
-        pop 1-11             [stack=1-06 0-12]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 1 = 4
-
-        pop 0-12             [stack=1-06]
-        // NOTE: No new value to push because last popped value < 2.
-        result += 0 = 4
-
-        pop 1-06             [stack=empty]
-        result += 1 = 5
-
-        // NOTE: result == 5.
-
-        // This completes the traversal of the right side of the binary tree.
-        // The stack is empty so all nodes have been visited and the algorithm is complete.
+        This completes the traversal of the right side of the binary tree.
+        The stack is empty so all nodes have been visited and the algorithm is complete.
     */
-
-// Helper macros for fixed size stack (built on an array).
-#define push(VAL) (cout << "push(" << (VAL).val << ", " << (VAL).parent << ")\n", assert(n > tos), stack[tos++] = (VAL))
-#define pop() (assert(0 < tos), cout << "pop(" << stack[tos - 1].val << ", " << stack[tos - 1].parent << ")\n", stack[--tos])
-#define stack_empty() (0 == tos)
-#define add_to_result(VAL) (cout << result << " + " << VAL << " = " << (result + VAL) << "\n", result += (VAL))
-
     template <typename T>
     T fib(T n) const {
         T result{};
@@ -146,38 +159,32 @@ public:
 
                 fibnum_t() = default;
                 fibnum_t(T val, T parent = {}) : val{std::move(val)}, parent{std::move(parent)} {}
+                operator T() const { return val; }
             };
-            fibnum_t stack[stack_size]; // Fast allocation; no heap.
-            size_t tos{}; // Index of next available location (last element + 1).
+            fibnum_t stack_array[stack_size]; // Fast allocation; no heap.
+            static_stack_t<fibnum_t> stack(stack_array, stack_size);
             
             auto const memoized_values_size = (std::max)(static_cast<T>(2), n + static_cast<T>(1));
-            T memoized_values[memoized_values_size]; // Cache of calculated fibonacci values.
+            T memoized_values[memoized_values_size]; // Cache of previously calculated fibonacci values.
             std::fill_n(memoized_values, memoized_values_size, 0);
             memoized_values[1] = 1;
             
-            push(fibnum_t{n});
-            while (!stack_empty()) {
-                auto const fibnum = pop();
-                auto const memoized_value = memoized_values[fibnum.val];
+            stack.push(n);
+            while (!stack.empty()) {
+                auto const fibnum = stack.pop();
+                auto const memoized_value = memoized_values[fibnum];
                 auto const memoized_value_exists = 0 != memoized_value;
                 if (memoized_value_exists) {
-cout << "Using memoized_values[" << fibnum.val << "] == " << memoized_value << "\n";
-                    add_to_result(memoized_value);
-
-// Update memoized value.
-memoized_values[fibnum.parent] = result;
-cout << "memoized_values[" << fibnum.parent << "] = " << memoized_values[fibnum.parent] << "\n";
+                    result += memoized_value;
+                    memoized_values[fibnum.parent] = result; // Update memoized value.
                 } else {
-                    auto const push_fibnums = 1 < fibnum.val;
+                    auto const push_fibnums = 1 < fibnum;
                     if (push_fibnums) {
-                        push((fibnum_t{fibnum.val - 2, fibnum.val}));
-                        push((fibnum_t{fibnum.val - 1, fibnum.val}));
+                        stack.push(fibnum - 2, fibnum);
+                        stack.push(fibnum - 1, fibnum);
                     } else {
-                        add_to_result(fibnum.val);
-
-// Update memoized value.
-memoized_values[fibnum.parent] = result;
-cout << "memoized_values[" << fibnum.parent << "] = " << memoized_values[fibnum.parent] << "\n";
+                        result += fibnum;
+                        memoized_values[fibnum.parent] = result; // Update memoized value.
                     }
                 }
             }
