@@ -22,8 +22,10 @@ using namespace std;
 
 // [----------------(120 columns)---------------> Module Code Delimiter <---------------(120 columns)----------------]
 
-/*
-    Iterative solution:
+class Solution {
+public:
+    /*
+        Iterative solution:
         
         Time = O(2^n), because each fibonacci number is calculated
                        from TWO previous fibonacci numbers, e.g.
@@ -46,12 +48,8 @@ using namespace std;
                        where 'n' is a unique node ID used to identify each 
                        individual node.
         
-        Space = O(1), because the maximum depth of the tree is Log2(31)
-                      and 31 is constant.
-*/
-class Solution {
-public:
-    /*
+        Space = O(n)
+
         Stack based algorithm:
             
         result = 0
@@ -62,7 +60,7 @@ public:
         push 3-02 (right)    [stack=3-02]
         push 4-01 (left)     [stack=4-01]
         
-        // Begin traverstal of the left side of the binary tree.
+        Begin traverstal of the left side of the binary tree:
         
         pop 4-01             [stack=3-02]
         push 2-04 (right)    [stack=3-02 2-04]
@@ -77,15 +75,15 @@ public:
         push 1-13 (left)     [stack=3-02 2-04 1-08 0-14 1-13]
         
         pop 1-13             [stack=3-02 2-04 1-08 0-14]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 1 = 1
 
         pop 0-14             [stack=3-02 2-04 1-08]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 0 = 1
 
         pop 1-08             [stack=3-02 2-04]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 1 = 2
 
         pop 2-04             [stack=3-02]
@@ -93,15 +91,15 @@ public:
         push 0-10 (left)     [stack=3-02 1-09 0-10]
         
         pop 0-10             [stack=3-02 1-09]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 0 = 2
 
         pop 1-09             [stack=3-02]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 1 = 3
 
-        // This completes the traversal of the left side of the binary tree.
-        // Now begin traversal of the right side of the binary tree.
+        This completes the traversal of the left side of the binary tree.
+        Begin traversal of the right side of the binary tree:
 
         pop 3-02             [stack=empty]
         push 1-06 (right)    [stack=1-06]
@@ -112,27 +110,27 @@ public:
         push 1-11            [stack=1-06 0-12 1-11]
 
         pop 1-11             [stack=1-06 0-12]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 1 = 4
 
         pop 0-12             [stack=1-06]
-        // NOTE: No new value to push because last popped value < 2.
+        No new value to push because last popped value < 2.
         result += 0 = 4
 
         pop 1-06             [stack=empty]
         result += 1 = 5
 
-        // NOTE: result == 5.
+        result == 5
 
-        // This completes the traversal of the right side of the binary tree.
-        // The stack is empty so all nodes have been visited and the algorithm is complete.
+        This completes the traversal of the right side of the binary tree.
+        The stack is empty so all nodes have been visited and the algorithm is complete.
     */
 
 // Helper macros for fixed size stack (built on an array).
-#define push(VAL) (cout << "push(" << VAL << ")\n", assert(/*std::size(stack)*/n > tos), stack[tos++] = (VAL))
-#define pop() (assert(0 < tos), cout << "pop(" << stack[tos - 1] << ")\n", stack[--tos])
+#define push(VAL) (assert(n > tos), stack[tos++] = (VAL))
+#define pop() (assert(0 < tos), stack[--tos])
 #define stack_empty() (0 == tos)
-#define add_to_result(VAL) (cout << result << " + " << VAL << " = " << (result + VAL) << "\n", result += (VAL))
+#define add_to_result(VAL) (result += (VAL))
 
     template <typename T>
     T fib(T n) const {
@@ -204,6 +202,24 @@ TEST_CASE("Case 4")
 TEST_CASE("Case 5")
 {
     CHECK(5 == Solution{}.fib(5));
+    cout << '\n';
+}
+
+TEST_CASE("Case 10")
+{
+    CHECK(55 == Solution{}.fib(10));
+    cout << '\n';
+}
+
+TEST_CASE("Case 20")
+{
+    CHECK(6765 == Solution{}.fib(20));
+    cout << '\n';
+}
+
+TEST_CASE("Case 30")
+{
+    CHECK(832040 == Solution{}.fib(30));
     cout << '\n';
 }
 
