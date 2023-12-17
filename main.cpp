@@ -13,7 +13,7 @@
 //!\sa https://github.com/doctest/doctest/blob/master/doc/markdown/main.md
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-//#include <array>
+#include <algorithm>
 #include <cassert>
 #include <doctest/doctest.h> //!\sa https://github.com/doctest/doctest/blob/master/doc/markdown/tutorial.md
 #include <iomanip>
@@ -129,8 +129,8 @@ public:
     */
 
 // Helper macros for fixed size stack (built on an array).
-#define push(VAL) (cout << "push(" << VAL << ")\n", assert(/*std::size(stack)*/n > tos), stack[tos++] = (VAL))
-#define pop() (assert(0 < tos), cout << "pop(" << stack[tos - 1] << ")\n", stack[--tos])
+#define push(VAL) (cout << "push(" << (VAL).val << ", " << (VAL).parent << ")\n", assert(n > tos), stack[tos++] = (VAL))
+#define pop() (assert(0 < tos), cout << "pop(" << stack[tos - 1].val << ", " << stack[tos - 1].parent << ")\n", stack[--tos])
 #define stack_empty() (0 == tos)
 #define add_to_result(VAL) (cout << result << " + " << VAL << " = " << (result + VAL) << "\n", result += (VAL))
 
@@ -139,25 +139,45 @@ public:
         T result{};
 
         if (1 < n) {
-            T stack[n]; // Fast allocation; no heap.
+            auto const stack_size = n;
+            struct fibnum_t {
+                T val; // The value in the fibonacci tree, e.g. 4.
+                T parent; // Parent value in fibonacci tree, e.g. 5 when val is 4.
+
+                fibnum_t() = default;
+                fibnum_t(T val, T parent = {}) : val{std::move(val)}, parent{std::move(parent)} {}
+            };
+            fibnum_t stack[stack_size]; // Fast allocation; no heap.
             size_t tos{}; // Index of next available location (last element + 1).
             
-            push(n);
+            auto const memoized_values_size = (std::max)(static_cast<T>(2), n + static_cast<T>(1));
+            T memoized_values[memoized_values_size]; // Cache of calculated fibonacci values.
+            std::fill_n(memoized_values, memoized_values_size, 0);
+            memoized_values[1] = 1;
+            
+            push(fibnum_t{n});
             while (!stack_empty()) {
                 auto const fibnum = pop();
-                if (1 < fibnum) {
-                    auto const fibnum_minus_two = fibnum - 2;
-                    if (1 < fibnum_minus_two) {
-                        push(fibnum_minus_two);
-                    } else if (0 < fibnum_minus_two) {
-                        add_to_result(fibnum_minus_two);
-                    }
-                    
-                    auto const fibnum_minus_one = fibnum - 1;
-                    if (1 < fibnum_minus_one) {
-                        push(fibnum_minus_one);
-                    } else if (0 < fibnum_minus_one) {
-                        add_to_result(fibnum_minus_one);
+                auto const memoized_value = memoized_values[fibnum.val];
+                auto const memoized_value_exists = 0 != memoized_value;
+                if (memoized_value_exists) {
+cout << "Using memoized_values[" << fibnum.val << "] == " << memoized_value << "\n";
+                    add_to_result(memoized_value);
+
+// Update memoized value.
+memoized_values[fibnum.parent] = result;
+cout << "memoized_values[" << fibnum.parent << "] = " << memoized_values[fibnum.parent] << "\n";
+                } else {
+                    auto const push_fibnums = 1 < fibnum.val;
+                    if (push_fibnums) {
+                        push((fibnum_t{fibnum.val - 2, fibnum.val}));
+                        push((fibnum_t{fibnum.val - 1, fibnum.val}));
+                    } else {
+                        add_to_result(fibnum.val);
+
+// Update memoized value.
+memoized_values[fibnum.parent] = result;
+cout << "memoized_values[" << fibnum.parent << "] = " << memoized_values[fibnum.parent] << "\n";
                     }
                 }
             }
@@ -204,6 +224,24 @@ TEST_CASE("Case 4")
 TEST_CASE("Case 5")
 {
     CHECK(5 == Solution{}.fib(5));
+    cout << '\n';
+}
+
+TEST_CASE("Case 10")
+{
+    CHECK(55 == Solution{}.fib(10));
+    cout << '\n';
+}
+
+TEST_CASE("Case 50")
+{
+    CHECK(12586269025ll == Solution{}.fib(50ll));
+    cout << '\n';
+}
+
+TEST_CASE("Case 75")
+{
+    CHECK(2111485077978050ll == Solution{}.fib(75ll));
     cout << '\n';
 }
 
