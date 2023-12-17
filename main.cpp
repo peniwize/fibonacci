@@ -13,7 +13,7 @@
 //!\sa https://github.com/doctest/doctest/blob/master/doc/markdown/main.md
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-//#include <array>
+#include <algorithm>
 #include <cassert>
 #include <doctest/doctest.h> //!\sa https://github.com/doctest/doctest/blob/master/doc/markdown/tutorial.md
 #include <iomanip>
@@ -22,34 +22,45 @@ using namespace std;
 
 // [----------------(120 columns)---------------> Module Code Delimiter <---------------(120 columns)----------------]
 
-/*
-    Recursive solution:
-        
-        Time = O(2^n), because each fibonacci number is calculated
-                       from TWO previous fibonacci numbers, e.g.
-                       fib(4) =
-                                       4
-                                     /   \
-                                    3     2
-                                   / \   / \
-                                  2   1 1   0
-                                 / \
-                                1   0
-                       Therefore the maximum possible number of 
-                       calculations is 2^n-1 (2^4-1 == 15, in this case.)
-                       Note that there will always be fewer because the 
-                       0 and 1 base cases do not need to be calculated
-                       and cause the binary tree to be "imperfect".
-        
-        Space = Log2(n), which is the maximum depth of the tree and 
-                         therefore the maximum number of recursive calls
-                         that will be made.
+/*!
+    f(0) = 0
+    f(1) = 1
+    f(n) = f(n-1) + f(n-2)
+    Each value can be calculated in ascending order provided 
+    that the previous two values have already been calculated:
+
+    f(0) = 0 (fib_minus_two)
+    f(1) = 1 (fib_minus_one)
+              fib_minus_one       fib_minus_two    result
+    f(2) = (f(2-1=1)=f(1)=1) + (f(2-2=0)=f(0)=0) = 1
+         = fib_minus_one     + fib_minus_two
+    f(3) = (f(3-1=2)=f(2)=1) + (f(3-2=1)=f(1)=1) = 2
+    f(4) = (f(4-1=3)=f(3)=2) + (f(4-2=2)=f(2)=1) = 3
+    f(5) = (f(5-1=4)=f(4)=3) + (f(5-2=3)=f(3)=2) = 5
+    ...
+
+    Time = O(n - 2) => O(n)
+
+    Space = O(1)
 */
 class Solution {
 public:
     template <typename T>
     constexpr T fib(T n) {
-        return 1 < n ? fib(n - 1) + fib(n - 2) : n;
+        if (1 < n) {
+            T fib_minus_one = 1, fib_minus_two = 0, result = 1; // Start with result of fib(2).
+            --n;
+            --n;
+            while (0 < n--) {
+                fib_minus_two = fib_minus_one;
+                fib_minus_one = result;
+                result = fib_minus_one + fib_minus_two;
+            }
+            
+            return result;
+        }
+
+        return n;
     }
 };
 
@@ -88,6 +99,24 @@ TEST_CASE("Case 4")
 TEST_CASE("Case 5")
 {
     CHECK(5 == Solution{}.fib(5));
+    cout << '\n';
+}
+
+TEST_CASE("Case 10")
+{
+    CHECK(55 == Solution{}.fib(10));
+    cout << '\n';
+}
+
+TEST_CASE("Case 50")
+{
+    CHECK(12586269025ll == Solution{}.fib(50ll));
+    cout << '\n';
+}
+
+TEST_CASE("Case 75")
+{
+    CHECK(2111485077978050ll == Solution{}.fib(75ll));
     cout << '\n';
 }
 
